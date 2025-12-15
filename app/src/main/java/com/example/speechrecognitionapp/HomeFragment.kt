@@ -12,6 +12,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
 import com.example.speechrecognitionapp.databinding.FragmentHomeBinding
 
@@ -47,6 +49,17 @@ class HomeFragment : Fragment(), RecordingCallback {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(
+                v.paddingLeft,
+                systemBars.top,
+                v.paddingRight,
+                v.paddingBottom
+            )
+            insets
+        }
+
         binding.btnRecord.setOnClickListener {
             if(isServiceBound) {
                 // Stop the service, if running

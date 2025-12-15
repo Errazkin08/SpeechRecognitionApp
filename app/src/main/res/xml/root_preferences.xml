@@ -1,6 +1,13 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <Preference
+        android:key="spacer"
+        android:title=""
+        android:layout="@layout/preference_spacer"
+        android:selectable="false"
+        android:enabled="false" />
+
     <PreferenceCategory app:title="@string/detection_header"
         app:icon="@drawable/baseline_settings_24">
 

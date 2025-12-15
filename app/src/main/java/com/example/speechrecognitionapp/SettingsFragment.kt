@@ -1,8 +1,12 @@
 package com.example.speechrecognitionapp
 
 import android.os.Bundle
+import android.view.View
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.recyclerview.widget.RecyclerView
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -30,4 +34,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             editText.inputType = android.text.InputType.TYPE_CLASS_NUMBER
         }
     }
+
+
+
 }

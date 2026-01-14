@@ -15,7 +15,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.speechrecognitionapp.databinding.FragmentHomeBinding
+import java.util.concurrent.TimeUnit
 
 class HomeFragment : Fragment(), RecordingCallback {
 
@@ -82,6 +89,12 @@ class HomeFragment : Fragment(), RecordingCallback {
         }
     }
 
+    override fun onStatusUpdate(status: String) {
+        activity?.runOnUiThread {
+            binding.statusTextView.text = status
+        }
+    }
+
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.d(TAG, "Service connected")
@@ -109,14 +122,13 @@ class HomeFragment : Fragment(), RecordingCallback {
 
     override fun onStop() {
         super.onStop()
-
+        // This logic was flawed and caused a race condition that destroyed the service.
+        // The service should only be stopped via the button press.
         if (isServiceBound) {
-            if (audioRecordingService?.isRecording!!) {
-                Log.d(TAG, "Foregrounding service")
+            if (audioRecordingService?.isRecording == true) {
+                Log.d(TAG, "App going to background, foregrounding service.")
                 audioRecordingService?.foreground()
             }
-        } else {
-            stopService()
         }
     }
 
@@ -124,7 +136,7 @@ class HomeFragment : Fragment(), RecordingCallback {
         val serviceIntent = Intent(activity, AudioRecordingService::class.java)
 
         try {
-            val energyThreshold = sharedPreferences?.getString("energy", "0.1")
+            val energyThreshold = sharedPreferences?.getString("energy", "0.005") // Lowered default
             //Log.d(TAG, "energyThreshold: $energyThreshold")
             val probabilityThreshold = sharedPreferences?.getString("probability", "0.002")
             //Log.d(TAG, "probabilityThreshold: $probabilityThreshold")
@@ -144,12 +156,16 @@ class HomeFragment : Fragment(), RecordingCallback {
 
         activity?.startService(serviceIntent)
         bindService()
+        schedulePeriodicLogUpload()
     }
 
     private fun stopService() {
         unbindService()
         val serviceIntent = Intent(activity, AudioRecordingService::class.java)
         activity?.stopService(serviceIntent)
+        WorkManager.getInstance(requireContext()).cancelUniqueWork("LogUploadWork")
+        Log.i(TAG, "Periodic log upload worker canceled.")
+        scheduleLogUploadForDebug()
     }
 
     private fun bindService() {
@@ -163,6 +179,28 @@ class HomeFragment : Fragment(), RecordingCallback {
             isServiceBound = false
         }
     }
+
+    // Use this for production
+    private fun schedulePeriodicLogUpload() {
+        val uploadWorkRequest = PeriodicWorkRequestBuilder<LogUploadWorker>(15, TimeUnit.MINUTES)
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
+            "LogUploadWork",
+            ExistingPeriodicWorkPolicy.REPLACE,
+            uploadWorkRequest
+        )
+
+        Log.i(TAG, "Periodic log upload worker scheduled.")
+    }
+
+    // Use this for immediate testing
+    private fun scheduleLogUploadForDebug() {
+        val uploadWorkRequest = OneTimeWorkRequestBuilder<LogUploadWorker>().build()
+        WorkManager.getInstance(requireContext()).enqueue(uploadWorkRequest)
+        Log.i(TAG, "One-time log upload worker scheduled for debugging.")
+    }
+
 
     companion object {
         private val TAG = HomeFragment::class.java.simpleName

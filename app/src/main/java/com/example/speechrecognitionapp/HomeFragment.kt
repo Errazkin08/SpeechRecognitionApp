@@ -15,10 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
-import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.speechrecognitionapp.databinding.FragmentHomeBinding
@@ -165,7 +162,6 @@ class HomeFragment : Fragment(), RecordingCallback {
         activity?.stopService(serviceIntent)
         WorkManager.getInstance(requireContext()).cancelUniqueWork("LogUploadWork")
         Log.i(TAG, "Periodic log upload worker canceled.")
-        scheduleLogUploadForDebug()
     }
 
     private fun bindService() {
@@ -187,20 +183,12 @@ class HomeFragment : Fragment(), RecordingCallback {
 
         WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
             "LogUploadWork",
-            ExistingPeriodicWorkPolicy.REPLACE,
+            ExistingPeriodicWorkPolicy.KEEP,
             uploadWorkRequest
         )
 
         Log.i(TAG, "Periodic log upload worker scheduled.")
     }
-
-    // Use this for immediate testing
-    private fun scheduleLogUploadForDebug() {
-        val uploadWorkRequest = OneTimeWorkRequestBuilder<LogUploadWorker>().build()
-        WorkManager.getInstance(requireContext()).enqueue(uploadWorkRequest)
-        Log.i(TAG, "One-time log upload worker scheduled for debugging.")
-    }
-
 
     companion object {
         private val TAG = HomeFragment::class.java.simpleName

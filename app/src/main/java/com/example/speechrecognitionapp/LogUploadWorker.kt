@@ -46,6 +46,11 @@ class LogUploadWorker(appContext: Context, workerParams: WorkerParameters) : Cor
             return Result.success()
         }
 
+        if (entriesToUpload.size < 100) {
+            Log.i(TAG, "Not enough logs to upload: ${entriesToUpload.size}. Accumulating more.")
+            return Result.success()
+        }
+
         Log.i(TAG, "Attempting to upload ${entriesToUpload.size} log entries to Realtime Database...")
 
         try {
